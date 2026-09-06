@@ -94,7 +94,6 @@ export default function AnalyticsPage() {
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-        // Gather all dates in this week
         let weekCompletions = 0;
         let weekPossible = 0;
         const startStr = formatDate(startOfWeek);
@@ -238,7 +237,6 @@ export default function AnalyticsPage() {
     const matching = activeHabits.filter((h) => h.category === category);
     if (matching.length === 0) return 0;
 
-    // Past 7 days check
     const today = new Date(todayStr + 'T00:00:00');
     let completions = 0;
     let possible = 0;
@@ -354,13 +352,18 @@ export default function AnalyticsPage() {
       ? disciplineMetrics
       : disciplineMetrics.filter((d) => d.name === selectedDiscipline);
 
+  const periodPeak =
+    trajectoryPoints.length > 0 ? Math.max(...trajectoryPoints.map((p) => p.score)) : 0;
+  const periodLow =
+    trajectoryPoints.length > 0 ? Math.min(...trajectoryPoints.map((p) => p.score)) : 0;
+
   return (
-    <div className="flex flex-col w-full gap-space-xl">
+    <div className="flex flex-col w-full gap-space-lg sm:gap-space-xl pb-10">
       {/* Analytics Header & Control Deck */}
-      <section className="flex flex-col gap-space-lg">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+      <section className="flex flex-col gap-space-md sm:gap-space-lg">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-space-sm sm:gap-space-md">
           <div>
-            <div className="flex items-center gap-space-xs mb-space-2xs">
+            <div className="flex items-center gap-space-xs mb-1 sm:mb-space-2xs">
               <span className="font-code-xs text-code-xs text-secondary tracking-widest uppercase font-semibold">
                 Personal Performance Hub
               </span>
@@ -370,34 +373,38 @@ export default function AnalyticsPage() {
               </span>
             </div>
             <div className="flex items-baseline gap-space-sm">
-              <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight font-semibold">
+              <h1 className="font-headline-lg text-2xl sm:text-headline-lg text-primary tracking-tight font-semibold">
                 Analytics &amp; Trajectory
               </h1>
-              <span className="font-code-sm text-code-sm text-on-surface-variant">Live Telemetry</span>
+              <span className="font-code-sm text-xs sm:text-code-sm text-on-surface-variant">
+                Live Telemetry
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-space-xs">
+          <div className="flex items-center gap-space-xs self-start md:self-auto">
             <button
               onClick={() => setShowExportModal(true)}
-              className="h-10 px-space-md rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-label-md flex items-center gap-space-xs shadow-xs transition-all cursor-pointer font-medium"
+              className="h-9 sm:h-10 px-space-sm sm:px-space-md rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-xs sm:text-label-md flex items-center gap-space-xs shadow-xs transition-all cursor-pointer font-medium"
               type="button"
             >
-              <span className="material-symbols-outlined text-[18px]">file_download</span>
+              <span className="material-symbols-outlined text-[16px] sm:text-[18px]">
+                file_download
+              </span>
               <span>Export Dossier</span>
             </button>
           </div>
         </div>
 
-        {/* Filter Bar Component */}
-        <div className="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-space-sm shadow-xs flex flex-wrap items-center justify-between gap-space-md">
-          {/* Time Granularity Switcher */}
-          <div className="inline-flex p-1 bg-surface-container rounded-lg gap-1">
+        {/* Responsive Filter Bar Component */}
+        <div className="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-2 sm:p-space-sm shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-space-md">
+          {/* Time Granularity Switcher: mobile 4-grid, desktop inline */}
+          <div className="grid grid-cols-4 p-1 bg-surface-container rounded-lg gap-1 w-full sm:w-auto">
             {(['All', 'Daily', 'Weekly', 'Monthly'] as const).map((g) => (
               <button
                 key={g}
                 onClick={() => setGranularity(g)}
-                className={`px-space-md py-1.5 rounded-md font-label-md text-label-md transition-all cursor-pointer ${
+                className={`px-2 sm:px-space-md py-1.5 rounded-md font-label-md text-xs sm:text-label-md transition-all cursor-pointer text-center ${
                   granularity === g
                     ? 'bg-surface-container-lowest text-primary font-semibold shadow-xs'
                     : 'text-on-surface-variant hover:text-on-surface'
@@ -410,11 +417,11 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Discipline Selector */}
-          <div className="flex flex-wrap items-center gap-space-sm">
+          <div className="w-full sm:w-auto">
             <select
               value={selectedDiscipline}
               onChange={(e) => setSelectedDiscipline(e.target.value)}
-              className="h-9 px-space-sm rounded-lg bg-surface-container-low border border-outline-variant/30 text-on-surface font-label-md text-label-md focus:outline-none cursor-pointer"
+              className="w-full sm:w-auto h-9 px-space-sm rounded-lg bg-surface-container-low border border-outline-variant/30 text-on-surface font-label-md text-xs sm:text-label-md focus:outline-none cursor-pointer"
             >
               <option value="All">All Disciplines (4)</option>
               <option value="Productivity">Productivity</option>
@@ -427,24 +434,25 @@ export default function AnalyticsPage() {
       </section>
 
       {/* Main Analytical Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-md sm:gap-space-lg items-start">
         {/* Left 8 Cols: Trajectory Chart & Discipline Breakdown */}
-        <div className="lg:col-span-8 flex flex-col gap-space-lg">
-          {/* Consistency Trajectory Curve Chart */}
-          <div className="bg-surface-container-lowest border border-outline-variant/40 p-space-lg rounded-xl shadow-xs flex flex-col gap-space-md relative">
-            <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="lg:col-span-8 flex flex-col gap-space-md sm:gap-space-lg">
+          {/* Consistency Trajectory Curve Chart Card */}
+          <div className="bg-surface-container-lowest border border-outline-variant/40 p-4 sm:p-space-lg rounded-xl shadow-xs flex flex-col gap-3 sm:gap-space-md relative overflow-hidden">
+            {/* Header & Velocity Indicator */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <span className="font-code-xs text-code-xs text-on-surface-variant uppercase tracking-wider block">
+                <span className="font-code-xs text-[10px] sm:text-code-xs text-on-surface-variant uppercase tracking-wider block">
                   Dynamic Trajectory Model
                 </span>
-                <h3 className="font-headline-sm text-headline-sm text-primary font-semibold">
+                <h3 className="font-headline-sm text-lg sm:text-headline-sm text-primary font-semibold">
                   Cadence Yield Velocity
                 </h3>
               </div>
 
               {/* Dynamic Velocity Badge */}
               <div
-                className={`flex items-center gap-space-xs px-space-sm py-1 rounded-full font-code-xs text-code-xs font-semibold border ${
+                className={`inline-flex items-center gap-space-xs px-2.5 sm:px-space-sm py-1 rounded-full font-code-xs text-xs sm:text-code-xs font-semibold border w-fit ${
                   velocityDiff > 0
                     ? 'bg-secondary/10 text-secondary border-secondary/30'
                     : velocityDiff < 0
@@ -469,181 +477,280 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
+            {/* Mobile-Friendly Quick KPI Strip */}
+            <div className="grid grid-cols-3 gap-2 sm:hidden pt-0.5">
+              <div className="bg-surface-container-low p-2 rounded-lg border border-outline-variant/30 flex flex-col">
+                <span className="font-code-xs text-[9px] text-on-surface-variant uppercase">
+                  Current
+                </span>
+                <span className="font-headline-sm text-base font-bold text-primary">
+                  {latestPoint?.score ?? 0}%
+                </span>
+              </div>
+              <div className="bg-surface-container-low p-2 rounded-lg border border-outline-variant/30 flex flex-col">
+                <span className="font-code-xs text-[9px] text-on-surface-variant uppercase">
+                  Period Peak
+                </span>
+                <span className="font-headline-sm text-base font-bold text-secondary">
+                  {periodPeak}%
+                </span>
+              </div>
+              <div className="bg-surface-container-low p-2 rounded-lg border border-outline-variant/30 flex flex-col">
+                <span className="font-code-xs text-[9px] text-on-surface-variant uppercase">
+                  Period Low
+                </span>
+                <span className="font-headline-sm text-base font-bold text-outline">
+                  {periodLow}%
+                </span>
+              </div>
+            </div>
+
             {/* SVG Visual Dynamic Real Curve or Empty State */}
             {relevantHabits.length === 0 ? (
-              <div className="h-56 flex flex-col items-center justify-center text-center gap-2 border border-dashed border-outline-variant/40 rounded-xl p-4">
+              <div className="h-48 sm:h-56 flex flex-col items-center justify-center text-center gap-2 border border-dashed border-outline-variant/40 rounded-xl p-4">
                 <span className="material-symbols-outlined text-[32px] text-on-surface-variant">
                   query_stats
                 </span>
-                <p className="font-body-sm text-body-sm text-on-surface-variant max-w-sm">
+                <p className="font-body-sm text-xs sm:text-body-sm text-on-surface-variant max-w-sm">
                   {selectedDiscipline === 'All'
                     ? 'Architect habits and log daily check-ins to generate your live trajectory curve.'
                     : `No habits active under ${selectedDiscipline}. Create a habit or switch to All Disciplines.`}
                 </p>
               </div>
             ) : (
-              <div className="relative w-full h-64 mt-2">
-                <svg
-                  className="w-full h-full overflow-visible"
-                  viewBox="0 0 640 220"
-                  preserveAspectRatio="none"
-                >
-                  <defs>
-                    <linearGradient id="areaGradientDynamic" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#006C49" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#006C49" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Horizontal Gridlines & Percentage Labels */}
-                  {[
-                    { label: '100%', y: 30 },
-                    { label: '75%', y: 66.25 },
-                    { label: '50%', y: 102.5 },
-                    { label: '25%', y: 138.75 },
-                    { label: '0%', y: 175 },
-                  ].map((grid) => (
-                    <g key={grid.label}>
-                      <line
-                        x1="55"
-                        y1={grid.y}
-                        x2="605"
-                        y2={grid.y}
-                        stroke="rgba(42, 27, 45, 0.08)"
-                        strokeDasharray="4 4"
-                      />
-                      <text
-                        x="48"
-                        y={grid.y + 4}
-                        textAnchor="end"
-                        className="font-code-xs text-[10px] fill-on-surface-variant/70 font-medium"
-                      >
-                        {grid.label}
-                      </text>
-                    </g>
-                  ))}
-
-                  {/* Shaded Area Fill below real curve */}
-                  {areaPathD && <path d={areaPathD} fill="url(#areaGradientDynamic)" />}
-
-                  {/* Real Dynamic Spline Curve (rises and falls according to actual data) */}
-                  {splinePathD && (
-                    <path
-                      d={splinePathD}
-                      fill="none"
-                      stroke="#006C49"
-                      strokeWidth="3.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  )}
-
-                  {/* Point Nodes with Labels & Hover Triggers */}
-                  {trajectoryPoints.map((pt) => {
-                    const isHovered = hoveredPoint?.dateKey === pt.dateKey;
-                    return (
-                      <g
-                        key={pt.dateKey + pt.label}
-                        onMouseEnter={() => setHoveredPoint(pt)}
-                        onMouseLeave={() => setHoveredPoint(null)}
-                        className="cursor-pointer"
-                      >
-                        {/* Interactive invisible hit target */}
-                        <circle cx={pt.x} cy={pt.y} r="16" fill="transparent" />
-
-                        {/* Outer pulsing ring when hovered */}
-                        {isHovered && (
-                          <circle
-                            cx={pt.x}
-                            cy={pt.y}
-                            r="9"
-                            fill="none"
-                            stroke="#006C49"
-                            strokeWidth="2"
-                            opacity="0.5"
-                          />
-                        )}
-
-                        {/* Data Node Circle */}
-                        <circle
-                          cx={pt.x}
-                          cy={pt.y}
-                          r={isHovered ? 6 : 4.5}
-                          fill={isHovered ? '#006C49' : '#2A1B2D'}
-                          stroke="#FFF8F5"
-                          strokeWidth="2.5"
-                          className="transition-all duration-150"
-                        />
-
-                        {/* Value Text above node */}
-                        <text
-                          x={pt.x}
-                          y={Math.max(18, pt.y - 10)}
-                          textAnchor="middle"
-                          className={`font-code-xs text-[11px] font-bold ${
-                            isHovered ? 'fill-secondary' : 'fill-primary'
-                          }`}
+              <div className="relative w-full">
+                {/* Scrollable Container on Mobile with Native Aspect Ratio */}
+                <div className="w-full overflow-x-auto pb-1 touch-pan-x scrollbar-none sm:scrollbar-thin">
+                  <div className="min-w-[500px] sm:min-w-full h-52 sm:h-64 relative">
+                    <svg
+                      className="w-full h-full overflow-visible"
+                      viewBox="0 0 640 220"
+                      preserveAspectRatio="xMidYMid meet"
+                    >
+                      <defs>
+                        <linearGradient
+                          id="areaGradientDynamic"
+                          x1="0%"
+                          y1="0%"
+                          x2="0%"
+                          y2="100%"
                         >
-                          {pt.score}%
-                        </text>
+                          <stop offset="0%" stopColor="#006C49" stopOpacity="0.25" />
+                          <stop offset="100%" stopColor="#006C49" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
 
-                        {/* Date / Period Label below baseline */}
-                        <text
-                          x={pt.x}
-                          y="198"
-                          textAnchor="middle"
-                          className={`font-code-xs text-[10px] ${
-                            isHovered ? 'fill-primary font-bold' : 'fill-on-surface-variant'
+                      {/* Horizontal Gridlines & Percentage Labels */}
+                      {[
+                        { label: '100%', y: 30 },
+                        { label: '75%', y: 66.25 },
+                        { label: '50%', y: 102.5 },
+                        { label: '25%', y: 138.75 },
+                        { label: '0%', y: 175 },
+                      ].map((grid) => (
+                        <g key={grid.label}>
+                          <line
+                            x1="55"
+                            y1={grid.y}
+                            x2="605"
+                            y2={grid.y}
+                            stroke="rgba(42, 27, 45, 0.08)"
+                            strokeDasharray="4 4"
+                          />
+                          <text
+                            x="48"
+                            y={grid.y + 4}
+                            textAnchor="end"
+                            className="font-code-xs text-[10px] fill-on-surface-variant/70 font-medium"
+                          >
+                            {grid.label}
+                          </text>
+                        </g>
+                      ))}
+
+                      {/* Shaded Area Fill below real curve */}
+                      {areaPathD && <path d={areaPathD} fill="url(#areaGradientDynamic)" />}
+
+                      {/* Real Dynamic Spline Curve */}
+                      {splinePathD && (
+                        <path
+                          d={splinePathD}
+                          fill="none"
+                          stroke="#006C49"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      )}
+
+                      {/* Point Nodes with Labels & Hover Triggers */}
+                      {trajectoryPoints.map((pt) => {
+                        const isHovered = hoveredPoint?.dateKey === pt.dateKey;
+                        return (
+                          <g
+                            key={pt.dateKey + pt.label}
+                            onMouseEnter={() => setHoveredPoint(pt)}
+                            onMouseLeave={() => setHoveredPoint(null)}
+                            onClick={() =>
+                              setHoveredPoint(isHovered ? null : pt)
+                            }
+                            className="cursor-pointer"
+                          >
+                            {/* Interactive invisible hit target (generous 32px diameter for touch) */}
+                            <circle cx={pt.x} cy={pt.y} r="18" fill="transparent" />
+
+                            {/* Outer pulsing ring when active */}
+                            {isHovered && (
+                              <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r="10"
+                                fill="none"
+                                stroke="#006C49"
+                                strokeWidth="2.5"
+                                opacity="0.6"
+                              />
+                            )}
+
+                            {/* Data Node Circle */}
+                            <circle
+                              cx={pt.x}
+                              cy={pt.y}
+                              r={isHovered ? 6.5 : 4.5}
+                              fill={isHovered ? '#006C49' : '#2A1B2D'}
+                              stroke="#FFF8F5"
+                              strokeWidth="2.5"
+                              className="transition-all duration-150"
+                            />
+
+                            {/* Value Text above node */}
+                            <text
+                              x={pt.x}
+                              y={Math.max(18, pt.y - 10)}
+                              textAnchor="middle"
+                              className={`font-code-xs text-[11px] font-bold ${
+                                isHovered ? 'fill-secondary' : 'fill-primary'
+                              }`}
+                            >
+                              {pt.score}%
+                            </text>
+
+                            {/* Date / Period Label below baseline */}
+                            <text
+                              x={pt.x}
+                              y="198"
+                              textAnchor="middle"
+                              className={`font-code-xs text-[10px] ${
+                                isHovered
+                                  ? 'fill-primary font-bold'
+                                  : 'fill-on-surface-variant'
+                              }`}
+                            >
+                              {pt.label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+
+                    {/* Clamped Floating Tooltip that never clips off screen */}
+                    {hoveredPoint && (
+                      <div
+                        className="absolute z-20 pointer-events-none -translate-x-1/2 -translate-y-full px-2.5 py-1.5 rounded-lg bg-primary text-surface text-xs shadow-lg border border-outline-variant/30 flex flex-col gap-0.5 whitespace-nowrap"
+                        style={{
+                          left: `${Math.min(84, Math.max(16, (hoveredPoint.x / 640) * 100))}%`,
+                          top: `${Math.max(8, (hoveredPoint.y / 220) * 100 - 6)}%`,
+                        }}
+                      >
+                        <span className="font-semibold text-surface text-[11px]">
+                          {hoveredPoint.subLabel}
+                        </span>
+                        <span className="font-code-xs text-[10px] text-secondary-container font-medium">
+                          {hoveredPoint.score}% Adherence ({hoveredPoint.completed}/
+                          {hoveredPoint.total} Habits)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mobile Swipe Cue */}
+                <div className="flex sm:hidden items-center justify-between text-[11px] text-on-surface-variant px-1 pt-1">
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">swipe</span>
+                    Swipe chart horizontally to inspect
+                  </span>
+                  <span className="font-code-xs text-[10px]">
+                    {trajectoryPoints.length} milestones
+                  </span>
+                </div>
+
+                {/* Mobile Quick-Tap Pill Carousel */}
+                <div className="flex sm:hidden gap-1.5 overflow-x-auto pb-1 pt-2 scrollbar-none">
+                  {trajectoryPoints.map((pt) => {
+                    const isSelected = hoveredPoint?.dateKey === pt.dateKey;
+                    return (
+                      <button
+                        key={'pill-' + pt.dateKey + pt.label}
+                        onClick={() =>
+                          setHoveredPoint(isSelected ? null : pt)
+                        }
+                        className={`shrink-0 px-2.5 py-1.5 rounded-lg border text-left flex flex-col transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-primary text-surface border-primary shadow-xs'
+                            : 'bg-surface-container-low border-outline-variant/30 text-on-surface hover:bg-surface-container'
+                        }`}
+                        type="button"
+                      >
+                        <span
+                          className={`text-[9px] font-code-xs ${
+                            isSelected ? 'text-surface/80' : 'text-on-surface-variant'
                           }`}
                         >
                           {pt.label}
-                        </text>
-                      </g>
+                        </span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-bold text-xs">{pt.score}%</span>
+                          <span
+                            className={`text-[9px] ${
+                              isSelected
+                                ? 'text-secondary-container'
+                                : 'text-on-surface-variant'
+                            }`}
+                          >
+                            {pt.completed}/{pt.total}
+                          </span>
+                        </div>
+                      </button>
                     );
                   })}
-                </svg>
-
-                {/* Floating Interactive Tooltip */}
-                {hoveredPoint && (
-                  <div
-                    className="absolute z-20 pointer-events-none -translate-x-1/2 -translate-y-full px-3 py-1.5 rounded-lg bg-primary text-surface text-xs shadow-lg border border-outline-variant/30 flex flex-col gap-0.5"
-                    style={{
-                      left: `${(hoveredPoint.x / 640) * 100}%`,
-                      top: `${Math.max(10, (hoveredPoint.y / 220) * 100 - 8)}%`,
-                    }}
-                  >
-                    <span className="font-semibold text-surface">{hoveredPoint.subLabel}</span>
-                    <span className="font-code-xs text-secondary-container">
-                      {hoveredPoint.score}% Adherence ({hoveredPoint.completed}/{hoveredPoint.total} Habits)
-                    </span>
-                  </div>
-                )}
+                </div>
               </div>
             )}
 
-            <div className="flex items-center justify-between text-xs text-on-surface-variant border-t border-surface-container pt-space-xs">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-secondary inline-block" />
-                Live mathematical yield trajectory based on verified routine check-ins.
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-on-surface-variant border-t border-surface-container pt-space-xs gap-1">
+              <span className="flex items-center gap-1.5 text-[11px] sm:text-xs">
+                <span className="w-2 h-2 rounded-full bg-secondary inline-block" />
+                Live mathematical yield trajectory based on verified check-ins.
               </span>
-              <span className="font-code-xs">
+              <span className="font-code-xs text-[11px] sm:text-xs">
                 Current Yield: <strong className="text-primary">{latestPoint?.score ?? 0}%</strong>
               </span>
             </div>
           </div>
 
           {/* Discipline Performance Breakdown */}
-          <div className="bg-surface-container-lowest border border-outline-variant/40 p-space-lg rounded-xl shadow-xs flex flex-col gap-space-md">
+          <div className="bg-surface-container-lowest border border-outline-variant/40 p-4 sm:p-space-lg rounded-xl shadow-xs flex flex-col gap-space-md">
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-code-xs text-code-xs text-on-surface-variant uppercase tracking-wider block">
                   7-Day Consistency Index
                 </span>
-                <h3 className="font-headline-sm text-headline-sm text-primary font-semibold">
+                <h3 className="font-headline-sm text-lg sm:text-headline-sm text-primary font-semibold">
                   Discipline Integrity Yield
                 </h3>
               </div>
-              <span className="font-code-xs text-code-xs text-on-surface-variant">
+              <span className="font-code-xs text-xs text-on-surface-variant">
                 Across 4 Pillars
               </span>
             </div>
@@ -652,14 +759,14 @@ export default function AnalyticsPage() {
               {filteredMetrics.map((disc) => (
                 <div key={disc.name} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-label-md text-label-md font-semibold text-primary">
+                    <span className="font-label-md text-xs sm:text-label-md font-semibold text-primary">
                       {disc.name} ({disc.routines} Routine{disc.routines === 1 ? '' : 's'})
                     </span>
-                    <span className="font-code-xs text-code-xs font-bold text-primary">
+                    <span className="font-code-xs text-xs sm:text-code-xs font-bold text-primary">
                       {disc.score}%
                     </span>
                   </div>
-                  <div className="w-full h-2.5 rounded-full bg-surface-container overflow-hidden">
+                  <div className="w-full h-2 sm:h-2.5 rounded-full bg-surface-container overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${disc.color}`}
                       style={{ width: `${disc.score}%` }}
@@ -672,9 +779,9 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Right 4 Cols: Reliability Matrix & Temporal Execution */}
-        <div className="lg:col-span-4 flex flex-col gap-space-lg">
+        <div className="lg:col-span-4 flex flex-col gap-space-md sm:gap-space-lg">
           {/* Habit Reliability Ranking */}
-          <div className="bg-surface-container-lowest border border-outline-variant/40 p-space-lg rounded-xl shadow-xs flex flex-col gap-space-md">
+          <div className="bg-surface-container-lowest border border-outline-variant/40 p-4 sm:p-space-lg rounded-xl shadow-xs flex flex-col gap-space-md">
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-code-xs text-code-xs text-on-surface-variant uppercase tracking-wider block">
@@ -696,7 +803,6 @@ export default function AnalyticsPage() {
                 </div>
               ) : (
                 activeHabits.slice(0, 6).map((h) => {
-                  // Real reliability rate over the past 7 days
                   const today = new Date(todayStr + 'T00:00:00');
                   let past7Done = 0;
                   for (let d = 0; d < 7; d++) {
@@ -712,14 +818,14 @@ export default function AnalyticsPage() {
                   return (
                     <div key={h.id} className="pt-2 flex items-center justify-between">
                       <div className="flex flex-col min-w-0 pr-2">
-                        <span className="font-body-sm text-body-sm font-semibold text-primary truncate">
+                        <span className="font-body-sm text-xs sm:text-body-sm font-semibold text-primary truncate">
                           {h.name}
                         </span>
-                        <span className="font-code-xs text-code-xs text-on-surface-variant">
+                        <span className="font-code-xs text-[10px] sm:text-code-xs text-on-surface-variant">
                           {h.currentStreak}D Streak • {h.category}
                         </span>
                       </div>
-                      <span className="font-code-sm text-code-sm font-bold text-secondary">
+                      <span className="font-code-sm text-xs sm:text-code-sm font-bold text-secondary">
                         {rate}%
                       </span>
                     </div>
@@ -730,38 +836,44 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Temporal Execution Heatmap Breakdown */}
-          <div className="bg-surface-container-lowest border border-outline-variant/40 p-space-lg rounded-xl shadow-xs flex flex-col gap-space-sm">
+          <div className="bg-surface-container-lowest border border-outline-variant/40 p-4 sm:p-space-lg rounded-xl shadow-xs flex flex-col gap-space-sm">
             <span className="font-label-md text-label-md text-primary font-semibold">
               Execution Cadence Heatmap
             </span>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
+            <p className="font-body-sm text-xs sm:text-body-sm text-on-surface-variant">
               Adherence distribution across daily temporal blocks over the last 7 days.
             </p>
             <div className="grid grid-cols-3 gap-2 mt-2 text-center">
-              <div className="p-3 rounded-lg bg-surface-container-low border border-outline-variant/30 flex flex-col items-center">
-                <span className="font-code-xs text-code-xs text-outline uppercase">Morning</span>
-                <span className="font-headline-md text-headline-md text-primary font-bold mt-1">
+              <div className="p-2 sm:p-3 rounded-lg bg-surface-container-low border border-outline-variant/30 flex flex-col items-center">
+                <span className="font-code-xs text-[10px] sm:text-code-xs text-outline uppercase">
+                  Morning
+                </span>
+                <span className="font-headline-md text-lg sm:text-headline-md text-primary font-bold mt-1">
                   {morningRate}%
                 </span>
-                <span className="font-code-xs text-code-xs text-secondary font-semibold">
+                <span className="font-code-xs text-[10px] sm:text-code-xs text-secondary font-semibold">
                   {morningHabits.length} Habits
                 </span>
               </div>
-              <div className="p-3 rounded-lg bg-surface-container-low border border-outline-variant/30 flex flex-col items-center">
-                <span className="font-code-xs text-code-xs text-outline uppercase">Day</span>
-                <span className="font-headline-md text-headline-md text-primary font-bold mt-1">
+              <div className="p-2 sm:p-3 rounded-lg bg-surface-container-low border border-outline-variant/30 flex flex-col items-center">
+                <span className="font-code-xs text-[10px] sm:text-code-xs text-outline uppercase">
+                  Day
+                </span>
+                <span className="font-headline-md text-lg sm:text-headline-md text-primary font-bold mt-1">
                   {afternoonRate}%
                 </span>
-                <span className="font-code-xs text-code-xs text-on-surface-variant">
+                <span className="font-code-xs text-[10px] sm:text-code-xs text-on-surface-variant">
                   {dayHabits.length} Habits
                 </span>
               </div>
-              <div className="p-3 rounded-lg bg-surface-container-low border border-outline-variant/30 flex flex-col items-center">
-                <span className="font-code-xs text-code-xs text-outline uppercase">Evening</span>
-                <span className="font-headline-md text-headline-md text-primary font-bold mt-1">
+              <div className="p-2 sm:p-3 rounded-lg bg-surface-container-low border border-outline-variant/30 flex flex-col items-center">
+                <span className="font-code-xs text-[10px] sm:text-code-xs text-outline uppercase">
+                  Evening
+                </span>
+                <span className="font-headline-md text-lg sm:text-headline-md text-primary font-bold mt-1">
                   {eveningRate}%
                 </span>
-                <span className="font-code-xs text-code-xs text-secondary font-semibold">
+                <span className="font-code-xs text-[10px] sm:text-code-xs text-secondary font-semibold">
                   {eveningHabits.length} Habits
                 </span>
               </div>
@@ -773,11 +885,11 @@ export default function AnalyticsPage() {
       {/* Export Dossier Modal */}
       {showExportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/50 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-2xl p-space-xl z-10 flex flex-col gap-space-md">
+          <div className="relative w-full max-w-md bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-2xl p-4 sm:p-space-xl z-10 flex flex-col gap-space-md">
             <h3 className="font-headline-sm text-headline-sm text-primary font-semibold">
               Export Habit Dossier
             </h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
+            <p className="font-body-sm text-xs sm:text-body-sm text-on-surface-variant">
               Download your complete verified performance dossier as a structured JSON file for
               backups, executive reporting, and cadence auditing.
             </p>

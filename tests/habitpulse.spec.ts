@@ -142,7 +142,7 @@ test.describe('HabitPulse Brand New Habit Tracker', () => {
 
     // Switch to Weekly granularity and verify dynamic points render
     await page.getByRole('button', { name: 'Weekly' }).click();
-    await expect(page.getByText('This Wk')).toBeVisible();
+    await expect(page.getByText('This Wk').first()).toBeVisible();
 
     // Switch to Monthly granularity
     await page.getByRole('button', { name: 'Monthly' }).click();
@@ -208,5 +208,22 @@ test.describe('HabitPulse Brand New Habit Tracker', () => {
     // Navigate to Habits and verify imported habit is rendered
     await page.locator('nav a', { hasText: 'Habits' }).click();
     await expect(page.getByText('Cold Plunge Protocol')).toBeVisible();
+  });
+
+  test('9. Trajectory Model renders smoothly on mobile viewport', async ({ page }) => {
+    // Set mobile viewport
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/analytics');
+
+    await expect(page.locator('h1')).toContainText('Analytics & Trajectory');
+    await expect(page.getByText('Dynamic Trajectory Model')).toBeVisible();
+
+    // Verify mobile KPI strip is visible
+    await expect(page.getByText('Period Peak')).toBeVisible();
+    await expect(page.getByText('Period Low')).toBeVisible();
+
+    // Verify segmented granularity switcher on mobile
+    await expect(page.getByRole('button', { name: 'Overview' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Daily' })).toBeVisible();
   });
 });
