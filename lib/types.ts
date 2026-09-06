@@ -42,3 +42,22 @@ export interface UserProfile {
   title: string;
 }
 
+export interface TrajectoryPoint {
+  label: string;
+  subLabel: string;
+  dateKey: string;
+  score: number;
+  completed: number;
+  total: number;
+  x: number;
+  y: number;
+}
+
+export interface BackupData {
+  version: string;
+  exportedAt: string;
+  userProfile?: UserProfile;
+  habits: Habit[];
+  auditLogs?: AuditLog[];
+}
+

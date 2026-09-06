@@ -73,7 +73,7 @@ export default function DashboardPage() {
     const rows = habits
       .map(
         (h) =>
-          `"${h.name}","${h.category}","${h.cadence}","${h.priority}",${h.currentStreak},${h.bestStreak},${h.completedDates.length}`
+          `"${h.name}","${h.category}","${h.cadence}","${h.priority}",${h.currentStreak},${h.bestStreak},${(h.completedDates || []).length}`
       )
       .join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv' });
@@ -81,8 +81,10 @@ export default function DashboardPage() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `habitpulse_audit_${selectedDate}.csv`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   return (

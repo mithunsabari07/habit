@@ -1,13 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHabitStore } from '@/lib/habitStore';
+import { BackupData } from '@/lib/types';
 
 export default function SettingsPage() {
-  const { habits, resetData, userProfile, updateUserProfile } = useHabitStore();
+  const { habits, auditLogs, resetData, userProfile, updateUserProfile, importData } =
+    useHabitStore();
   const [userName, setUserName] = useState(userProfile.name);
   const [userRole, setUserRole] = useState(userProfile.title);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [exportNotice, setExportNotice] = useState(false);
+  const [importNotice, setImportNotice] = useState<{ message: string; isError?: boolean } | null>(
+    null
+  );
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setUserName(userProfile.name);
@@ -21,15 +29,58 @@ export default function SettingsPage() {
     setTimeout(() => setSavedNotice(false), 3000);
   };
 
+  // Reliable cross-device & browser Export JSON
   const handleExportJSON = () => {
-    const data = JSON.stringify(habits, null, 2);
+    const backup: BackupData = {
+      version: '2.0',
+      exportedAt: new Date().toISOString(),
+      userProfile,
+      habits,
+      auditLogs,
+    };
+
+    const data = JSON.stringify(backup, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `HabitPulse_Backup_${Date.now()}.json`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    setExportNotice(true);
+    setTimeout(() => setExportNotice(false), 4000);
+  };
+
+  // Cross-device Backup Import
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const json = JSON.parse(text);
+        const result = importData(json);
+        if (result.success) {
+          setImportNotice({ message: result.message, isError: false });
+        } else {
+          setImportNotice({ message: result.message, isError: true });
+        }
+        setTimeout(() => setImportNotice(null), 5000);
+      } catch {
+        setImportNotice({
+          message: 'Failed to read file. Please select a valid HabitPulse JSON backup.',
+          isError: true,
+        });
+        setTimeout(() => setImportNotice(null), 5000);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const initials = userName
@@ -54,7 +105,7 @@ export default function SettingsPage() {
           System Calibration
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-          Customize your profile, configure cadence alerts, and manage your habit data.
+          Customize your profile, configure cadence telemetry, and manage your device storage.
         </p>
       </div>
 
@@ -62,6 +113,28 @@ export default function SettingsPage() {
         <div className="p-space-md rounded-xl bg-secondary/10 border border-secondary text-secondary font-label-md text-label-md flex items-center gap-space-xs animate-in fade-in">
           <span className="material-symbols-outlined text-[18px]">check_circle</span>
           <span>Profile preferences updated successfully.</span>
+        </div>
+      )}
+
+      {exportNotice && (
+        <div className="p-space-md rounded-xl bg-secondary/10 border border-secondary text-secondary font-label-md text-label-md flex items-center gap-space-xs animate-in fade-in">
+          <span className="material-symbols-outlined text-[18px]">download_done</span>
+          <span>Habit backup JSON file downloaded successfully.</span>
+        </div>
+      )}
+
+      {importNotice && (
+        <div
+          className={`p-space-md rounded-xl font-label-md text-label-md flex items-center gap-space-xs animate-in fade-in ${
+            importNotice.isError
+              ? 'bg-error-container/40 border border-error text-on-error-container'
+              : 'bg-secondary/10 border border-secondary text-secondary'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {importNotice.isError ? 'error' : 'task_alt'}
+          </span>
+          <span>{importNotice.message}</span>
         </div>
       )}
 
@@ -137,7 +210,11 @@ export default function SettingsPage() {
                 Synthesizes today&apos;s scheduled protocols at 06:00 AM.
               </span>
             </div>
-            <input type="checkbox" defaultChecked className="accent-primary-container w-4 h-4 cursor-pointer" />
+            <input
+              type="checkbox"
+              defaultChecked
+              className="accent-primary-container w-4 h-4 cursor-pointer"
+            />
           </div>
 
           <div className="flex items-center justify-between py-2">
@@ -149,7 +226,11 @@ export default function SettingsPage() {
                 Prompts review of unverified commitments at 09:30 PM.
               </span>
             </div>
-            <input type="checkbox" defaultChecked className="accent-primary-container w-4 h-4 cursor-pointer" />
+            <input
+              type="checkbox"
+              defaultChecked
+              className="accent-primary-container w-4 h-4 cursor-pointer"
+            />
           </div>
 
           <div className="flex items-center justify-between py-2">
@@ -161,22 +242,42 @@ export default function SettingsPage() {
                 Generates Sunday evening performance review.
               </span>
             </div>
-            <input type="checkbox" defaultChecked className="accent-primary-container w-4 h-4 cursor-pointer" />
+            <input
+              type="checkbox"
+              defaultChecked
+              className="accent-primary-container w-4 h-4 cursor-pointer"
+            />
           </div>
         </div>
       </div>
 
       {/* Data Management & Persistence */}
       <div className="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-space-lg shadow-xs flex flex-col gap-space-md">
-        <h3 className="font-headline-sm text-headline-sm text-primary font-semibold">
-          Data Governance &amp; Backups
-        </h3>
-        <p className="font-body-sm text-body-sm text-on-surface-variant">
-          Your habit telemetry is stored locally in your browser&apos;s persistent local storage.
-        </p>
+        <div>
+          <h3 className="font-headline-sm text-headline-sm text-primary font-semibold">
+            Device Local Storage &amp; Backups
+          </h3>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
+            All your habits, daily check-in histories, and profile configurations are stored
+            directly inside this device&apos;s browser <code className="text-secondary bg-surface-container px-1 py-0.5 rounded text-xs">localStorage</code>.
+            Use JSON Export and Import to transfer your data between computers and mobile devices.
+          </p>
+        </div>
+
+        {/* Hidden File Input for JSON Backup Import */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept=".json,application/json"
+          onChange={handleImportFile}
+          className="hidden"
+          id="habit-json-import-input"
+        />
 
         <div className="flex flex-wrap items-center gap-space-sm pt-2">
+          {/* Export Button */}
           <button
+            id="export-habits-json-btn"
             onClick={handleExportJSON}
             className="px-space-md py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex items-center gap-space-xs transition-colors cursor-pointer font-medium"
             type="button"
@@ -185,11 +286,27 @@ export default function SettingsPage() {
             <span>Export Habits JSON</span>
           </button>
 
+          {/* Import Button */}
+          <button
+            id="import-habits-json-btn"
+            onClick={() => fileInputRef.current?.click()}
+            className="px-space-md py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex items-center gap-space-xs transition-colors cursor-pointer font-medium"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">upload</span>
+            <span>Import Habits JSON</span>
+          </button>
+
+          {/* Reset Clean Baseline */}
           <button
             onClick={() => {
-              if (window.confirm('Reset all habits and history to a completely clean baseline?')) {
+              if (
+                window.confirm(
+                  'Are you sure you want to reset all habits and history on this device to a completely clean state?'
+                )
+              ) {
                 resetData();
-                alert('Habit tracker has been reset to a brand-new clean state.');
+                alert('Habit tracker on this device has been reset.');
               }
             }}
             className="px-space-md py-2 rounded-lg bg-error-container/40 hover:bg-error-container text-on-error-container font-label-md text-label-md flex items-center gap-space-xs transition-colors cursor-pointer font-medium"

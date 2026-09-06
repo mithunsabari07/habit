@@ -3,7 +3,10 @@ import { test, expect } from '@playwright/test';
 test.describe('HabitPulse Brand New Habit Tracker', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      window.localStorage.clear();
+      if (!window.sessionStorage.getItem('test_initialized')) {
+        window.localStorage.clear();
+        window.sessionStorage.setItem('test_initialized', 'true');
+      }
     });
   });
 
@@ -95,5 +98,115 @@ test.describe('HabitPulse Brand New Habit Tracker', () => {
     await page.locator('nav a', { hasText: 'Settings' }).click();
     await expect(page).toHaveURL(/.*settings/);
     await expect(page.locator('h1')).toContainText('System Calibration');
+  });
+
+  test('5. Data persists in device localStorage across page reload', async ({ page }) => {
+    await page.goto('/');
+
+    // Architect a routine
+    await page.locator('#sidebar-new-habit-btn').click();
+    await page.getByPlaceholder(/Morning Sunlight Protocol/i).fill('Drink 2L Water');
+    await page.getByRole('button', { name: 'Establish Protocol' }).click();
+    await expect(page.locator('#habit-checklist-container').getByText('Drink 2L Water')).toBeVisible();
+
+    // Verify localStorage has the habit
+    const stored = await page.evaluate(() => localStorage.getItem('habitpulse_habits_v2'));
+    expect(stored).toBeTruthy();
+    expect(stored).toContain('Drink 2L Water');
+
+    // Reload page and check that habit is still rendered
+    await page.reload();
+    await expect(page.locator('#habit-checklist-container').getByText('Drink 2L Water')).toBeVisible();
+  });
+
+  test('6. Trajectory Model calculates real dynamic values and curve reflects check-ins', async ({ page }) => {
+    await page.goto('/');
+
+    // Create a habit and check it off
+    await page.locator('#sidebar-new-habit-btn').click();
+    await page.getByPlaceholder(/Morning Sunlight Protocol/i).fill('Deep Work Protocol');
+    await page.getByRole('button', { name: 'Establish Protocol' }).click();
+
+    // Toggle today to complete
+    const toggleBtn = page.locator('#habit-checklist-container button[aria-label="Mark Completed"]').first();
+    await toggleBtn.click();
+
+    // Navigate to Analytics
+    await page.locator('nav a', { hasText: 'Analytics' }).click();
+    await expect(page.locator('h1')).toContainText('Analytics & Trajectory');
+
+    // Verify Trajectory Model shows real curve and yield velocity
+    await expect(page.getByText('Cadence Yield Velocity')).toBeVisible();
+    await expect(page.getByText('Dynamic Trajectory Model')).toBeVisible();
+    await expect(page.getByText(/100%/).first()).toBeVisible();
+
+    // Switch to Weekly granularity and verify dynamic points render
+    await page.getByRole('button', { name: 'Weekly' }).click();
+    await expect(page.getByText('This Wk')).toBeVisible();
+
+    // Switch to Monthly granularity
+    await page.getByRole('button', { name: 'Monthly' }).click();
+    await expect(page.locator('svg line')).toHaveCount(5); // 5 gridlines (100, 75, 50, 25, 0)
+  });
+
+  test('7. Settings Export Habits JSON triggers download with complete data', async ({ page }) => {
+    await page.goto('/');
+
+    // Create a habit
+    await page.locator('#sidebar-new-habit-btn').click();
+    await page.getByPlaceholder(/Morning Sunlight Protocol/i).fill('Evening Reading');
+    await page.getByRole('button', { name: 'Establish Protocol' }).click();
+
+    // Navigate to Settings
+    await page.locator('nav a', { hasText: 'Settings' }).click();
+    await expect(page.locator('#export-habits-json-btn')).toBeVisible();
+
+    // Trigger download and verify download event
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#export-habits-json-btn').click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toMatch(/HabitPulse_Backup_\d+\.json/);
+    await expect(page.getByText('Habit backup JSON file downloaded successfully.')).toBeVisible();
+  });
+
+  test('8. Settings Import Habits JSON restores backup successfully', async ({ page }) => {
+    await page.goto('/settings');
+
+    // Create a mock backup file payload
+    const mockBackup = {
+      version: '2.0',
+      exportedAt: new Date().toISOString(),
+      userProfile: { name: 'Titan Executive', title: 'Managing Director' },
+      habits: [
+        {
+          id: 'imported-1',
+          name: 'Cold Plunge Protocol',
+          category: 'Health',
+          cadence: 'Morning',
+          priority: 'High',
+          targetWeekly: 7,
+          currentStreak: 5,
+          bestStreak: 12,
+          completedDates: ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-09-05'],
+          createdAt: '2026-09-01',
+        },
+      ],
+      auditLogs: [],
+    };
+
+    // Upload via the file input
+    await page.locator('#habit-json-import-input').setInputFiles({
+      name: 'HabitPulse_Backup_Test.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(mockBackup)),
+    });
+
+    // Verify confirmation message
+    await expect(page.getByText('Successfully imported 1 routine.')).toBeVisible();
+
+    // Navigate to Habits and verify imported habit is rendered
+    await page.locator('nav a', { hasText: 'Habits' }).click();
+    await expect(page.getByText('Cold Plunge Protocol')).toBeVisible();
   });
 });
